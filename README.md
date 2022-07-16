@@ -5,15 +5,15 @@ PIL wrapper to draw complex geometric shapes
 
 4 small modules:
 
-Distributions, to draw complex distributions in 2D such as sunflower, spirals, parametric curves, etc...
+## Distributions, to draw complex distributions in 2D such as sunflower, spirals, parametric curves, etc...
 
 ![Distributions](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/distributions.jpg)
 
-Functions, to create weights that will be applied to size, alpha, contour width...
+## Functions, to create weights that will be applied to size, alpha, contour width...
 
 ![Weights](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/weights.png)
 
-ColorPiles, to easily generate complex color palettes
+## ColorPiles, to easily generate complex color palettes
 
 ![palette](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/palette.png)
 
