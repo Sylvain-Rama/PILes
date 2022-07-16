@@ -20,3 +20,5 @@ PIL wrapper to draw complex geometric shapes
 And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
 ![final](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Sunflower2.jpg)
+
+See a [notebook](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/PILes%20-%20Examples.ipynb) for more information.
