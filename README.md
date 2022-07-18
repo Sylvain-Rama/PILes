@@ -21,7 +21,7 @@ And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
 ![final](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Sunflower2.jpg)
 
-Or multiple lines betwee the same coordinates:
+Or multiple lines between the generated coordinates:
 
 ![Lines](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Lines.png)
 
