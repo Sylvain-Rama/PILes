@@ -283,6 +283,7 @@ class ImageDraws(ImageDraw):
         widths = [int(x) for x in widths]
         
         alphas = self._return_proper_values(params.alphas, len(xs))
+        alphas = [int(x) for x in alphas]
         
         xs = xs * (params.width) / 2 + self.img.width / 2
         ys = ys * (params.height) / 2 + self.img.height / 2
