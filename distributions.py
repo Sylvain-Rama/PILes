@@ -37,8 +37,15 @@ class Spiral(_polar_coords):
         self._thetas = np.linspace(0, self.turns * np.pi, self.n)
         self._step = 1 / (turns * 2 * np.pi)
         
+        
+    def _lerp_values(self, lower, upper, segments, inclusive=True):
+        ''' lerp values and optionally include the first and last values '''
+        for each in range(segments):
+            if each in [0, segments-1] and not inclusive:
+                pass
+            else:
+                yield (each / float(segments-1)) * (float(upper)-float(lower)) + lower
    
-
     # To use np.pi yields strange results...
     def golden(self, a=1, b=3.1415 / 2.0, **kwargs):
 
@@ -65,6 +72,18 @@ class Spiral(_polar_coords):
         r = self._normalize(r)
 
         return self._pol_to_cart(r, thetas)
+    
+    def patterned(self, loops=3, segments=7, inner=0.1, outer=1):
+        
+        inner = inner / outer
+        outer = 1
+        
+        segments = loops*segments+1
+        theta = [arc/(segments-1) * np.pi * 2.0 * loops for arc in range(int(segments))]
+        
+        r = np.linspace(inner, outer, segments)
+        
+        return self._pol_to_cart(r, theta)
 
     def quadratic(self, k=13):
 
@@ -96,8 +115,16 @@ class Circular(_polar_coords):
         theta = np.linspace(angle, final_angle - (2 * np.pi / self.n), self.n)
 
         return self._pol_to_cart(r, theta)
-
-
+    
+    def star(self, inner=0.5, outer=1):
+        inner = inner / outer
+        outer = 1
+        
+        r = np.tile([outer, inner], self.n)
+        theta = np.linspace(0, (2*np.pi) - (2*np.pi / (self.n*2)), self.n*2)
+        
+        return self._pol_to_cart(r, theta)
+        
 class Parametric(_polar_coords):
     def __init__(self, n=100):
         self.n = n
@@ -116,8 +143,6 @@ class Parametric(_polar_coords):
         theta = np.pi * (1 + 5 ** 0.5) * indices / alpha
 
         return self._pol_to_cart(r, theta)
-        
-
 
 class RandomCoords(_polar_coords):
     def __init__(self, n=100, ratio=1):
@@ -154,29 +179,41 @@ class RandomCoords(_polar_coords):
         return x, y / self.ratio
         
         
-
-class Rectangular: # Not finished
-    def __init__(self, n=100, ratio=2):
+class Uniform: # Not finished
+    def __init__(self, n=100):
         self.n = n
-        self.ratio = ratio
+        
 
-    def linear_uniform(self):
-        x = np.linspace(-1, 1, self.n)
-        y = np.linspace(-1, 1, self.n)
-
-        return x, y
+    def rectangular(self):
+        
+        n = int(np.sqrt(self.n))
+        dim = np.linspace(-1, 1, n)
+                
+        grid = np.meshgrid(dim, dim)
+        
+        return grid[0], grid[1]
+    
+    
+    def disk(self):
+        x, y = self.rectangular()
+        mask = np.sqrt(x**2 + y**2) < 1
+        
+        return x[mask], y[mask]
+        
 
 if __name__ == '__main__':
     
-    distribs = [Spiral().golden(), Spiral().archimedean(), Spiral().quadratic(),
+    distribs = [Spiral().golden(), Spiral().archimedean(), Spiral().quadratic(), Spiral().patterned(),
                 Parametric().sunflower(), Parametric().lissajous(), 
-                Circular().uniform(), Circular().polygon(),
-                RandomCoords().disk(), RandomCoords().normal(), RandomCoords().circular(), RandomCoords().rectangular()]
+                Circular().uniform(), Circular().polygon(), Circular().star(),
+                RandomCoords().disk(), RandomCoords().normal(), RandomCoords().circular(), RandomCoords().rectangular(),
+                Uniform().rectangular(), Uniform(300).disk()]
     
-    names = ['Golden Spiral', 'Archimedean Spiral', 'Quadratic Spiral', 
+    names = ['Golden Spiral', 'Archimedean Spiral', 'Quadratic Spiral', 'Patterned Spiral',
              'Sunflower', 'Lissajous',
-             'Circular Uniform', 'Polygon',
-             'Random Disk', 'Random Normal', 'Random Circular', 'Random Rectangular']
+             'Circular Uniform', 'Polygon', 'Star',
+             'Random Disk', 'Random Normal', 'Random Circular', 'Random Rectangular',
+             'Uniform Rectangular', 'Uniform Disk']
     fig, axes = plt.subplots(figsize=(16, 16), nrows=3, ncols=5, sharex=True, sharey=True)
     ax = axes.ravel()
     
