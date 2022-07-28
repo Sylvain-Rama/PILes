@@ -36,7 +36,7 @@ class Spiral(_polar_coords):
         self.turns = turns
         self._thetas = np.linspace(0, self.turns * np.pi, self.n)
         self._step = 1 / (turns * 2 * np.pi)
-        
+                
    
     # To use np.pi yields strange results...
     def golden(self, a=1, b=3.1415 / 2.0, **kwargs):
@@ -65,13 +65,13 @@ class Spiral(_polar_coords):
 
         return self._pol_to_cart(r, thetas)
     
-    def patterned(self, loops=3, segments=7, inner=0.1, outer=1):
+    def patterned(self, segments=7, inner=0.1, outer=1):
         
         inner = inner / outer
         outer = 1
         
-        segments = loops*segments+1
-        theta = [arc/(segments-1) * np.pi * 2.0 * loops for arc in range(int(segments))]
+        segments = self.turns*segments+1
+        theta = [arc/(segments-1) * np.pi * 2.0 * self.turns for arc in range(int(segments))]
         
         r = np.linspace(inner, outer, segments)
         
@@ -117,6 +117,8 @@ class Circular(_polar_coords):
         
         return self._pol_to_cart(r, theta)
         
+    
+        
 class Parametric(_polar_coords):
     def __init__(self, n=100):
         self.n = n
@@ -135,6 +137,25 @@ class Parametric(_polar_coords):
         theta = np.pi * (1 + 5 ** 0.5) * indices / alpha
 
         return self._pol_to_cart(r, theta)
+    
+    def gear(self, gears=10, inner=0.8, outer=1, smooth = 3):
+        inner = inner / outer
+        outer = 1
+        
+        ppg = int(np.ceil(self.n / gears))
+
+        r = np.tile(np.append(np.repeat(inner, ppg), np.repeat(outer, ppg)), gears)
+
+        r = np.append(r, r)
+
+        r2 = np.convolve(r, np.ones(smooth)/smooth, mode='same')
+
+        theta = np.linspace(0, 2*np.pi, self.n*2)
+
+        x, y = self._pol_to_cart(r2[self.n:-self.n], theta)
+        
+        return x, y
+        
 
 class RandomCoords(_polar_coords):
     def __init__(self, n=100, ratio=1):
@@ -196,17 +217,17 @@ class Uniform: # Not finished
 if __name__ == '__main__':
     
     distribs = [Spiral().golden(), Spiral().archimedean(), Spiral().quadratic(), Spiral().patterned(),
-                Parametric().sunflower(), Parametric().lissajous(), 
+                Parametric().sunflower(), Parametric().lissajous(), Parametric().gear(),
                 Circular().uniform(), Circular().polygon(), Circular().star(),
                 RandomCoords().disk(), RandomCoords().normal(), RandomCoords().circular(), RandomCoords().rectangular(),
                 Uniform().rectangular(), Uniform(300).disk()]
     
     names = ['Golden Spiral', 'Archimedean Spiral', 'Quadratic Spiral', 'Patterned Spiral',
-             'Sunflower', 'Lissajous',
+             'Sunflower', 'Lissajous', 'Gears',
              'Circular Uniform', 'Polygon', 'Star',
              'Random Disk', 'Random Normal', 'Random Circular', 'Random Rectangular',
              'Uniform Rectangular', 'Uniform Disk']
-    fig, axes = plt.subplots(figsize=(16, 16), nrows=3, ncols=5, sharex=True, sharey=True)
+    fig, axes = plt.subplots(figsize=(16, 16), nrows=4, ncols=5, sharex=True, sharey=True)
     ax = axes.ravel()
     
     for i, (dist, name) in enumerate(zip(distribs, names)):
