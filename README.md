@@ -21,8 +21,10 @@ And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
 ![final](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Sunflower2.jpg)
 
-Or multiple lines between the generated coordinates:
+Lines between the generated coordinates:
 
-![Lines](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Lines.png)
+![Lines](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Lines.png?raw=true)
+
+Independent images, modify their attributes according to axis, distances to centre, etc...
 
 See a [notebook](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/PILes%20-%20Examples.ipynb) for more information.
