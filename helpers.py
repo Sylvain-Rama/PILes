@@ -1,27 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 27 12:28:18 2022
-
-@author: Sylvain Rama
+@author: Sylvain
 Simple definitions for PILes: a dict to establish the nuber of sides of polygons
-And a dict to match color names to teir RGB values.
+And a dict to match color names to their RGB values.
 """
 
-polygon_dict = {'triangle': 3,
-                'square': 4,
-                'pentagon': 5,
-                'hexagon': 6,
-                'heptagon': 7,
-                'octagon': 8,
-                # Feel free to add more...
-                }
+from PIL import Image
+from PIL.ImageDraw import ImageDraw, ImageFont
+import numpy as np
+
+# Simple dict to match the name of the shape with the corresponding number of sides.
+polygon_dict = {
+    "triangle": 3,
+    "square": 4,
+    "pentagon": 5,
+    "hexagon": 6,
+    "heptagon": 7,
+    "octagon": 8,
+    # Feel free to add more...
+}
 
 # I cannot remember where I found this dict of colors, sorry... :/
 color_dict = {
     "RED": (255, 0, 0),
     "GREEN": (0, 255, 0),
     "BLUE": (0, 0, 255),
-
     "BLACK": (0, 0, 0),
     "DARK_GREY": (60, 60, 60),
     "DARK_SLATE_GREY": (47, 79, 79),
@@ -136,8 +139,6 @@ color_dict = {
     "SLATE_GREY_4": (108, 123, 139),
     "VERY_LIGHT_GREY": (205, 205, 205),
     "WHITE": (255, 255, 255),
-
-
     "ALICE_BLUE": (240, 248, 255),
     "AQUA": (0, 255, 255),
     "AQUAMARINE": (127, 255, 212),
@@ -244,8 +245,6 @@ color_dict = {
     "TURQUOISE_2": (0, 229, 238),
     "TURQUOISE_3": (0, 197, 205),
     "TURQUOISE_4": (0, 134, 139),
-
-
     "BAKERS_CHOCOLATE": (92, 51, 23),
     "BEIGE": (245, 245, 220),
     "BROWN": (166, 42, 42),
@@ -285,7 +284,6 @@ color_dict = {
     "TAN_3": (205, 133, 63),
     "TAN_4": (139, 90, 43),
     "VERY_DARK_BROWN": (92, 64, 51),
-
     "CHARTREUSE": (127, 255, 0),
     "CHARTREUSE_1": (127, 255, 0),
     "CHARTREUSE_2": (118, 238, 0),
@@ -344,8 +342,6 @@ color_dict = {
     "SPRING_GREEN_3": (0, 205, 102),
     "SPRING_GREEN_4": (0, 139, 69),
     "YELLOW_GREEN": (154, 205, 50),
-
-
     "BISQUE": (255, 228, 196),
     "BISQUE_1": (255, 228, 196),
     "BISQUE_2": (238, 213, 183),
@@ -460,7 +456,6 @@ color_dict = {
     "VIOLET_RED_2": (238, 58, 140),
     "VIOLET_RED_3": (205, 50, 120),
     "VIOLET_RED_4": (139, 34, 82),
-
     "DARK_ORCHID,": (153, 50, 204),
     "DARK_ORCHID_1": (191, 62, 255),
     "DARK_ORCHID_2": (178, 58, 238),
@@ -518,7 +513,6 @@ color_dict = {
     "THISTLE_4": (139, 123, 139),
     "VIOLET": (238, 130, 238),
     "VIOLET_BLUE": (159, 95, 159),
-
     "BLANCHED_ALMOND,": (255, 235, 205),
     "DARK_GOLDENROD": (184, 134, 11),
     "DARK_GOLDENROD_1": (255, 185, 15),
@@ -604,5 +598,31 @@ color_dict = {
     "QUARTZ": (217, 217, 243),
 }
 
-if __name__ == '__main__':
-    pass
+if __name__ == "__main__":
+    # If started by itself, show all the available colors in the dict.
+    img_width = 4000
+    img_height = 2000
+
+    img = Image.new("RGBA", (img_width, img_height), color=(255, 255, 255, 255))
+    draw = ImageDraw(img)
+
+    n_colors = len(color_dict.keys())
+    ncols = 28
+    nrows = np.ceil(n_colors / ncols).astype(int)
+    x = np.linspace(100, img_width - 100, ncols)
+    y = np.linspace(100, img_height - 100, nrows)
+
+    radius = 30
+    font = ImageFont.truetype("arial.ttf", 12)
+
+    for num, (name, color) in enumerate(color_dict.items()):
+        i = num // ncols
+        j = num % ncols
+
+        draw.ellipse(
+            [x[j] - radius, y[i] - radius, x[j] + radius, y[i] + radius], fill=color
+        )
+        draw.text(
+            (x[j] - radius, y[i] - radius - 20), name, fill=(0, 0, 0, 255), font=font
+        )
+    img.show()
