@@ -5,7 +5,7 @@ PIL wrapper to draw complex geometric shapes
 
 4 small modules:
 
-### Distributions, to draw complex distributions in 2D such as sunflower, spirals, parametric curves, etc...
+### Distributions, to draw complex distributions in 2D such as sunflower, spirals, parametric curves and many more.
 
 ![Distributions](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/distributions.jpg)
 
