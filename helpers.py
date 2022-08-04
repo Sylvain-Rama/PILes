@@ -603,3 +603,6 @@ color_dict = {
     "WHEAT_4": (139, 126, 102),
     "QUARTZ": (217, 217, 243),
 }
+
+if __name__ == '__main__':
+    pass

@@ -394,12 +394,22 @@ class ImageDraws(ImageDraw):
 
         for img2, x, y, size, alpha, angle, ratio in all_params:
 
-            if angle != 0:
-                img2 = img2.rotate(angle, expand=True, resample=Image.BICUBIC)
             if alpha != 255:
                 img3 = img2.copy()
                 img3.putalpha(alpha)
                 img2.paste(img3, img2)
+                
+            if size != 1:
+                width, height = img2.size
+                img2 = img2.resize((int(width*size), int(height*size)), resample=Image.LANCZOS)
+                
+            if ratio != 1:
+                width, height = img2.size
+                img2 = img2.resize((int(width*ratio), height), resample=Image.LANCZOS)
+                
+            if angle != 0:
+                img2 = img2.rotate(angle, expand=True, resample=Image.BICUBIC)
+                
             tmp_x, tmp_y = img2.size
             tmp_x /= 2
             tmp_y /= 2

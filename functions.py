@@ -71,11 +71,16 @@ class Angle:
                 f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
             )
             return
+        
+    def _normalize(self, r):
+        return (r - r.min()) / (r.max() - r.min())
+
 
     def _cart_to_polar(self, x, y):
         # Convert cartesian coordinates to polar.
         r = np.sqrt(x ** 2 + y ** 2)
         theta = np.where(y >= 0, np.arccos(x / r), -np.arccos(x / r))
+        
 
         return r, theta
 
@@ -88,6 +93,11 @@ class Angle:
         value = np.nan_to_num(value, nan=0)
 
         return value
+
+    def inc_uniform(self):
+        _, theta = self._cart_to_polar(self.x, self.y)
+        return self._normalize(theta)
+        
 
 
 class Value:
