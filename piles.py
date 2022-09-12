@@ -305,7 +305,37 @@ class ImageDraws(ImageDraw):
                     x, y, size, n_sides, fill_color, outline, width, angle, ratio
                 )
 
-    def DrawLines(self, params=PILe, closed=False):
+
+    def _draw_single_line(self, x1, y1, x2, y2, width, outline):
+        tmp_width = abs(x1 - x2) + 2 * width
+        tmp_height = abs(y1 - y2) + 2 * width
+
+        tmp = Image.new(
+            "RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0)
+        )
+        tmp_draw = ImageDraw(tmp)
+
+        tmp_draw.line(
+            (width, width, tmp_width - width, tmp_height - width),
+            fill=outline,
+            width=width,
+        )
+
+        # Annoying thing to draw lines in any direction and rotate them in any angle.
+        # Instead of computing the angle, I flip the image if needed.
+        corner_x, corner_y = x1 - width, y1 - width
+
+        if x1 > x2:
+            tmp = tmp.transpose(Image.FLIP_LEFT_RIGHT)
+            corner_x = x2 - width
+        if y1 > y2:
+            tmp = tmp.transpose(Image.FLIP_TOP_BOTTOM)
+            corner_y = y2 - width
+        self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
+        
+
+
+    def DrawLines(self, params=PILe, continuous=True, closed=False):
         # Same as DrawShapes, but for lines.
 
         xs, ys = params.coords
@@ -329,41 +359,61 @@ class ImageDraws(ImageDraw):
         if closed:
             xs = np.append(xs, xs[0])
             ys = np.append(ys, ys[0])
-        for i in range(len(xs) - 1):
-
-            x1, x2 = xs[i], xs[i + 1]
-            y1, y2 = ys[i], ys[i + 1]
-
-            width = widths[i]
-            outline = outlines[i]
-            alpha = alphas[i]
-            outline = self._return_proper_color(outline, alpha)
-
-            tmp_width = abs(x1 - x2) + 2 * width
-            tmp_height = abs(y1 - y2) + 2 * width
-
-            tmp = Image.new(
-                "RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0)
-            )
-            tmp_draw = ImageDraw(tmp)
-
-            tmp_draw.line(
-                (width, width, tmp_width - width, tmp_height - width),
-                fill=outline,
-                width=width,
-            )
-
-            # Annoying thing to draw lines in any direction and rotate them in any angle.
-            # Instead of computing the angle, I flip the image if needed.
-            corner_x, corner_y = x1 - width, y1 - width
-
-            if x1 > x2:
-                tmp = tmp.transpose(Image.FLIP_LEFT_RIGHT)
-                corner_x = x2 - width
-            if y1 > y2:
-                tmp = tmp.transpose(Image.FLIP_TOP_BOTTOM)
-                corner_y = y2 - width
-            self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
+        
+        
+        if continuous:
+            
+            for i in range(len(xs) - 1):
+    
+                x1, x2 = xs[i], xs[i + 1]
+                y1, y2 = ys[i], ys[i + 1]
+    
+                width = widths[i]
+                outline = outlines[i]
+                alpha = alphas[i]
+                
+                outline = self._return_proper_color(outline, alpha)
+    
+                self._draw_single_line(x1, y1, x2, y2, width, outline)
+    
+                # tmp_width = abs(x1 - x2) + 2 * width
+                # tmp_height = abs(y1 - y2) + 2 * width
+    
+                # tmp = Image.new(
+                #     "RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0)
+                # )
+                # tmp_draw = ImageDraw(tmp)
+    
+                # tmp_draw.line(
+                #     (width, width, tmp_width - width, tmp_height - width),
+                #     fill=outline,
+                #     width=width,
+                # )
+    
+                # # Annoying thing to draw lines in any direction and rotate them in any angle.
+                # # Instead of computing the angle, I flip the image if needed.
+                # corner_x, corner_y = x1 - width, y1 - width
+    
+                # if x1 > x2:
+                #     tmp = tmp.transpose(Image.FLIP_LEFT_RIGHT)
+                #     corner_x = x2 - width
+                # if y1 > y2:
+                #     tmp = tmp.transpose(Image.FLIP_TOP_BOTTOM)
+                #     corner_y = y2 - width
+                # self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
+        else:
+            for i in range (len(xs) // 2):
+                x1, x2 = xs[i*2], xs[i*2 + 1]
+                y1, y2 = ys[i*2], ys[i*2 + 1]
+                
+                width = widths[i*2]
+                outline = outlines[i*2]
+                alpha = alphas[i*2]
+                
+                outline = self._return_proper_color(outline, alpha)
+    
+                self._draw_single_line(x1, y1, x2, y2, width, outline)
+                
 
     def DrawImages(self, params=PILe):
         # Main method to draw multiple images in one call.
