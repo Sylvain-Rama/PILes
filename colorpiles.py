@@ -113,7 +113,7 @@ class ColorPile:
         cmap = LinearSegmentedColormap.from_list("", colors / 255, 256)
         cmap = cmap(np.linspace(0, 1, n)) * 255
         cmap = cmap[:, 0:3].astype(int)
-        color_map = [x for x in cmap]  # back to list for ease of use.
+        color_map = [tuple(x) for x in cmap]  # back to list of tuples for ease of use.
 
         name = self.name + f"-extended_{n}"
 
