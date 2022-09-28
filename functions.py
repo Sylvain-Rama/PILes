@@ -117,8 +117,39 @@ class Modify(_BaseFunction):
         y -= centre[1]
 
         return x, y
-
-
+    
+    
+    def jitter(self, x=0.1, y=0.1):
+        
+        j_x = np.random.uniform(-x, x, size = len(self.x))
+        j_y = np.random.uniform(-y, y, size = len(self.y))
+        
+        return self.x + j_x, self.y + j_y
+    
+    def interleave(self, x, y):
+        if len(x) != len(y):
+            raise ValueError(
+                f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
+            )
+            return
+        
+        if (len(x) != len(self.x)) | (len(y) != len(self.y)):
+            raise ValueError(
+                f"Arrays to interleave must have the same length but got ({len(self.x)}, {len(self.y)} and ({len(x)}, {len(y)}."
+            )
+            return
+        
+        int_x = np.empty((self.x.size + x.size,), dtype=float)
+        int_x[0::2] = self.x
+        int_x[1::2] = x
+        
+        int_y = np.empty((self.y.size + y.size,), dtype=float)
+        int_y[0::2] = self.y
+        int_y[1::2] = y
+        
+        return int_x, int_y
+        
+        
 if __name__ == "__main__":
     # If called by itself, demonstrate the use of the functions.
     from distributions import Parametric
@@ -151,7 +182,7 @@ if __name__ == "__main__":
     ax[3].set_title("Sizes depending on distance & angle")
 
     fig.suptitle(
-        "Size can be modified by distance from centre and theta angle", fontsize=18
+        "Attributes can be modified by distance from centre and theta angle", fontsize=18
     )
     fig.tight_layout(pad=1.2)
 
@@ -174,13 +205,13 @@ if __name__ == "__main__":
     ax[1].scatter(x2, y2, s=20, c="black")
     ax[1].set_title(f"Points rotated by {angle} degrees")
 
-    for i, color in enumerate(["red", "black", "blue", "green"]):
+    x3, y3 = Modify(x, y).jitter()
 
-        ax[2].scatter(x, y, s=i * 10 + 20, c=color)
-        x, y = Modify(x, y).rotate(angle=5, centre=(0, i*0.2))
-    ax[2].set_title("Repetition of rotations with shifted centres")
-
-    fig2.suptitle("Distributions can be rotated", fontsize=18)
+    ax[2].scatter(x, y, s=20, c="red")
+    ax[2].scatter(x3, y3, s=20, c="black")
+    ax[2].set_title("Points with added jitter")
+    
+    fig2.suptitle("Distributions can be further modified", fontsize=18)
     fig2.tight_layout(pad=1.2)
 
     fig2.show()

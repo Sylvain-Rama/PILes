@@ -190,7 +190,7 @@ class RandomCoords(_polar_coords):
             r = np.sqrt(r)
         return self._pol_to_cart(r, theta)
 
-    def normal(self, sd=0.3, **kwargs):
+    def normal(self, sd=0.3):
         # Gaussian shape
         r = np.sqrt(np.abs(np.random.normal(loc=0, scale=sd, size=self.n)))
         theta = np.random.uniform(low=0, high=2 * np.pi, size=self.n)
@@ -251,10 +251,85 @@ class Uniform:
         return np.ravel(x), np.ravel(y)
 
 
+class Noise:
+    def __init__(self, steps=100, amount=0.3):
+
+        self.steps = steps
+        self.amount = amount
+
+        lin = np.linspace(-1, 1, steps)
+        self.xx, self.yy = np.meshgrid(lin, lin)
+
+    def _return_points(self, data):
+        p = self.amount * data
+        r = np.random.random(p.shape)
+
+        return (
+            self.xx[np.where(r < p)],
+            self.yy[np.where(r < p)],
+        )
+
+    def gaussian(self, sd=0.3):
+        distrib = np.exp(
+            -(self.xx ** 2 / (2 * sd ** 2) + (self.yy ** 2 / (2 * sd ** 2)))
+        )
+
+        return self._return_points(distrib)
+
+    def perlin(self, grid=5, seed=48):
+        # taken from https://stackoverflow.com/questions/42147776/producing-2d-perlin-noise-with-numpy
+
+        def lerp(a, b, x):
+            "linear interpolation"
+            return a + x * (b - a)
+
+        def fade(t):
+            "6t^5 - 15t^4 + 10t^3"
+            return 6 * t ** 5 - 15 * t ** 4 + 10 * t ** 3
+
+        def gradient(h, x, y):
+            "grad converts h to the right gradient vector and return the dot product with (x,y)"
+            vectors = np.array([[0, 1], [0, -1], [1, 0], [-1, 0]])
+            g = vectors[h % 4]
+            return g[:, :, 0] * x + g[:, :, 1] * y
+
+        lin = np.linspace(0, grid, self.steps)
+        x, y = np.meshgrid(lin, lin)
+
+        # permutation table
+        np.random.seed(seed)
+        p = np.arange(256, dtype=int)
+        np.random.shuffle(p)
+        p = np.stack([p, p]).flatten()
+
+        # coordinates of the top-left
+        xi, yi = x.astype(int), y.astype(int)
+
+        # internal coordinates
+        xf, yf = x - xi, y - yi
+
+        # fade factors
+        u, v = fade(xf), fade(yf)
+
+        # noise components
+        n00 = gradient(p[p[xi] + yi], xf, yf)
+        n01 = gradient(p[p[xi] + yi + 1], xf, yf - 1)
+        n11 = gradient(p[p[xi + 1] + yi + 1], xf - 1, yf - 1)
+        n10 = gradient(p[p[xi + 1] + yi], xf - 1, yf)
+
+        # combine noises
+        x1 = lerp(n00, n10, u)
+        x2 = lerp(n01, n11, u)
+
+        data = lerp(x1, x2, v)
+
+        return self._return_points(data)
+
+
 if __name__ == "__main__":
     # If run alone, simply plot the distributions as examples.
 
-    distribs = [
+    distribs1 = [
         Spiral().golden(),
         Spiral().archimedean(),
         Spiral().quadratic(),
@@ -273,7 +348,12 @@ if __name__ == "__main__":
         Uniform().hexagon(),
     ]
 
-    names = [
+    distribs2 = [
+        Noise().gaussian(),
+        Noise(amount=2).perlin(),
+    ]
+
+    names1 = [
         "Golden Spiral",
         "Archimedean Spiral",
         "Quadratic Spiral",
@@ -291,13 +371,34 @@ if __name__ == "__main__":
         "Uniform Square",
         "Uniform Hexagonal",
     ]
+
+    names2 = [
+        "Gaussian Noise",
+        "Perlin Noise",
+    ]
+
     fig, axes = plt.subplots(
         figsize=(12, 12), nrows=4, ncols=4, sharex=True, sharey=True
     )
     ax = axes.ravel()
 
-    for i, (dist, name) in enumerate(zip(distribs, names)):
+    for i, (dist, name) in enumerate(zip(distribs1, names1)):
 
-        ax[i].scatter(*dist)
+        ax[i].scatter(*dist, s=10)
         ax[i].set_aspect("equal")
         ax[i].set_title(name)
+    fig.suptitle("Simple Distributions", fontsize=18)
+    fig.tight_layout(pad=1.2)
+
+    fig2, axes = plt.subplots(
+        figsize=(12, 4), nrows=1, ncols=2, sharex=True, sharey=True
+    )
+    ax = axes.ravel()
+
+    for i, (dist, name) in enumerate(zip(distribs2, names2)):
+
+        ax[i].scatter(*dist, s=5)
+        ax[i].set_aspect("equal")
+        ax[i].set_title(name)
+    fig2.suptitle("2D noise Distributions", fontsize=18)
+    fig2.tight_layout(pad=1.2)
