@@ -100,7 +100,23 @@ class Value(_BaseFunction):
 
     def as_index(self):
         return self._normalize(self.x)
+    
 
+class Neighbors(_BaseFunction):
+    from scipy.spatial import cKDTree
+    
+    def n_neighbors(self, dist=0.2):
+        points = np.stack((self.x, self.y), axis=1)
+        
+        tree = cKDTree(points)
+        s = []
+        for point in points:
+            n = tree.query_ball_point(point, dist)
+            s = np.append(s, len(n))
+            
+        return self._normalize(s)
+        
+    
 
 class Modify(_BaseFunction):
     def rotate(self, angle=10, centre=(0, 0)):
