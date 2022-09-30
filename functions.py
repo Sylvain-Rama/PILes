@@ -89,28 +89,31 @@ class Angle(_BaseFunction):
         return value
 
     def inc_uniform(self):
+        # Increasing with the angle of the point in polar coordinates.
         _, theta = self._cart_to_pol(self.x, self.y)
         return self._normalize(theta)
 
 
-class Value(_BaseFunction):
-    """This class outputs a normalized version of the input array. Used to index
-    an attribute to any array.
-    """
-
-    def as_index(self):
-        return self._normalize(self.x)
-    
-
 class Neighbors(_BaseFunction):
-    from scipy.spatial import cKDTree
+    '''This class will output weights depending on the number of neighbors around each point.
+    Neighbors can be taken from another distribution.
+    '''
     
-    def n_neighbors(self, dist=0.2):
-        points = np.stack((self.x, self.y), axis=1)
+    
+    def n_neighbors(self, x=None, y=None, dist=0.2):
+        from scipy.spatial import cKDTree
         
-        tree = cKDTree(points)
+        self.points = np.stack((self.x, self.y), axis=1)
+        
+        if (x is None) | (y is None):
+            pop = np.stack((self.x, self.y), axis=1)
+        
+        else:
+            pop = np.stack((x, y), axis=1)
+            
+        tree = cKDTree(pop)
         s = []
-        for point in points:
+        for point in self.points:
             n = tree.query_ball_point(point, dist)
             s = np.append(s, len(n))
             
@@ -119,6 +122,13 @@ class Neighbors(_BaseFunction):
     
 
 class Modify(_BaseFunction):
+    ''' Class used to modify already generated distributions.
+    '''
+    
+    def normalize(self):
+        return self._normalize(self.x), self._normalize(self.y)
+    
+    
     def rotate(self, angle=10, centre=(0, 0)):
 
         self.x += centre[0]

@@ -198,7 +198,7 @@ class RandomCoords(_polar_coords):
         return self._pol_to_cart(r, theta)
 
     def circular(self):
-        # Randome points in a circle
+        # Random points on a circle
         r = np.ones((self.n))
         theta = np.random.uniform(low=0, high=2 * np.pi, size=self.n)
 
@@ -210,6 +210,14 @@ class RandomCoords(_polar_coords):
         y = np.random.uniform(low=-1, high=1, size=self.n)
 
         return x, y / self.ratio
+    
+    def linear(self, angle=0):
+        # Random points on a straight line
+        r = np.random.uniform(low=0, high=1, size=self.n)
+        theta = np.full(self.n, fill_value=(angle/360)*2*np.pi)
+        
+        return self._pol_to_cart(r, theta)
+        
 
 
 class Uniform:
