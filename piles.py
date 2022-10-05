@@ -9,10 +9,12 @@ Created on Mon May 23 12:31:10 2022
 import numpy as np
 from dataclasses import dataclass
 import re
+from math import prod
+from itertools import product
 
 from helpers import color_dict, polygon_dict
 
-from PIL import Image
+from PIL import Image, ImageChops
 from PIL.ImageDraw import ImageDraw, _compute_regular_polygon_vertices
 
 
@@ -87,6 +89,99 @@ class PILe:
 # Will match '3-gon', '4-gon', etc...
 n_gons_patterns = re.compile("^\d+-gon$")
 
+class GroupImages:
+    def __init__(self, imgs):
+        self.imgs = imgs
+        
+        
+    def multidraw(self, nrows=1, ncols=1, border=0, background_color=(255, 255, 255, 255)):
+        img_width = max([x.width for x in self.imgs])
+        img_height = max([x.height for x in self.imgs])
+        
+        final_width = img_width * ncols + border * (ncols + 1)
+        final_height = img_height * nrows + border * (nrows + 1)
+        
+        final_img = Image.new("RGBA", final_width, final_height, background_color)
+        
+        idx = 0
+        for i in nrows:
+            for j in ncols:
+                
+                final_img.paste(self.imgs[idx], border + i * img_width, border + j * img_height )
+                
+                idx += 1
+                
+        return final_img
+
+class ImageOps:
+    def __init__(self, img):
+        self.img = img
+    
+    def _get_new_color_2(self, old_color, n_colors=2):
+        """
+        Get the "closest" colour to old_val in the range [0,1] per channel divided
+        into nc values.
+
+        """
+
+        return np.round(old_color * (n_colors - 1)) / (n_colors - 1)
+    
+    
+    def _get_new_color(self, old_color, n_colors=2):
+        p = np.linspace(0, 1, n_colors)
+        p = np.array(list(product(p,p,p)))
+        
+        idx = np.argmin(np.sum((old_color[None,:] - p)**2, axis=1))
+        
+        
+        return p[idx]
+        
+    
+    
+    
+    
+    def dither(self, n_colors=2):
+        """
+        Floyd-Steinberg dither the image img into a palette with nc colours per
+        channel.
+        Taken from https://scipython.com/blog/floyd-steinberg-dithering/
+
+        """
+        width = self.img.width
+        height = self.img.height
+        arr = np.array(self.img, dtype=float) / 255
+
+        for ir in range(height):
+            for ic in range(width):
+                # NB need to copy here for RGB arrays otherwise err will be (0,0,0)!
+                old_val = arr[ir, ic].copy()
+                new_val = self._get_new_color(old_val, n_colors)
+                arr[ir, ic] = new_val
+                err = old_val - new_val
+                # In this simple example, we will just ignore the border pixels.
+                if ic < width - 1:
+                    arr[ir, ic+1] += err * 7/16
+                if ir < height - 1:
+                    if ic > 0:
+                        arr[ir+1, ic-1] += err * 3/16
+                    arr[ir+1, ic] += err * 5/16
+                    if ic < width - 1:
+                        arr[ir+1, ic+1] += err / 16
+
+        carr = np.array(arr/np.max(arr, axis=(0,1)) * 255, dtype=np.uint8)
+        
+        return Image.fromarray(carr)
+    
+    def reduce_palette(self, n_colors):
+        """Simple palette reduction without dithering."""
+        arr = np.array(self.img, dtype=float) / 255
+        arr = self._get_new_color(arr, n_colors)
+    
+        carr = np.array(arr/np.max(arr) * 255, dtype=np.uint8)
+        
+        return Image.fromarray(carr)
+        
+    
 
 class ImageDraws(ImageDraw):
     """ Main class for drawing multiple shapes with a single call.
@@ -333,7 +428,7 @@ class ImageDraws(ImageDraw):
             corner_y = y2 - width
         self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
         
-
+        
 
     def DrawLines(self, params=PILe, continuous=True, closed=False):
         # Same as DrawShapes, but for lines.
@@ -376,31 +471,7 @@ class ImageDraws(ImageDraw):
     
                 self._draw_single_line(x1, y1, x2, y2, width, outline)
     
-                # tmp_width = abs(x1 - x2) + 2 * width
-                # tmp_height = abs(y1 - y2) + 2 * width
-    
-                # tmp = Image.new(
-                #     "RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0)
-                # )
-                # tmp_draw = ImageDraw(tmp)
-    
-                # tmp_draw.line(
-                #     (width, width, tmp_width - width, tmp_height - width),
-                #     fill=outline,
-                #     width=width,
-                # )
-    
-                # # Annoying thing to draw lines in any direction and rotate them in any angle.
-                # # Instead of computing the angle, I flip the image if needed.
-                # corner_x, corner_y = x1 - width, y1 - width
-    
-                # if x1 > x2:
-                #     tmp = tmp.transpose(Image.FLIP_LEFT_RIGHT)
-                #     corner_x = x2 - width
-                # if y1 > y2:
-                #     tmp = tmp.transpose(Image.FLIP_TOP_BOTTOM)
-                #     corner_y = y2 - width
-                # self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
+                
         else:
             for i in range (len(xs) // 2):
                 x1, x2 = xs[i*2], xs[i*2 + 1]
