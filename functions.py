@@ -16,7 +16,7 @@ class _BaseFunction:
             raise ValueError(
                 f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
             )
-            return
+            
 
     def _normalize(self, r):
         return (r - r.min()) / (r.max() - r.min())
@@ -157,13 +157,13 @@ class Modify(_BaseFunction):
             raise ValueError(
                 f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
             )
-            return
+            
         
         if (len(x) != len(self.x)) | (len(y) != len(self.y)):
             raise ValueError(
                 f"Arrays to interleave must have the same length but got ({len(self.x)}, {len(self.y)} and ({len(x)}, {len(y)}."
             )
-            return
+            
         
         int_x = np.empty((self.x.size + x.size,), dtype=float)
         int_x[0::2] = self.x

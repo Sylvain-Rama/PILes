@@ -259,6 +259,40 @@ class Uniform:
         return np.ravel(x), np.ravel(y)
 
 
+class from_array:
+    def __init__(self, array):
+        
+        if not isinstance(array, np.ndarray):
+            raise ValueError('Array must be a valid numpy array.')
+            
+        
+        # flipping y axis as images have inverted y-coordinates.
+        self.arr = np.flip(np.transpose(array), axis=1)
+        
+        
+    def threshold(self, thr=128):
+        
+        if len(self.arr.shape) != 2:
+            raise ValueError('Array must be 2-dimensional')
+            
+        
+        # inferior to threshold as we want dark points, not light one.
+        x, y = np.where(self.arr < thr)
+        
+        max_val = max(max(x), max(y))
+        
+        x = 2 * (x / max_val - 0.5)
+        y = 2 * (y / max_val - 0.5)
+
+        
+        
+        
+        return x, y
+        
+        
+
+
+
 class Noise:
     def __init__(self, steps=100, amount=0.3):
 

@@ -14,7 +14,7 @@ from itertools import product
 
 from helpers import color_dict, polygon_dict
 
-from PIL import Image, ImageChops
+from PIL import Image
 from PIL.ImageDraw import ImageDraw, _compute_regular_polygon_vertices
 
 
@@ -117,7 +117,7 @@ class ImageOps:
     def __init__(self, img):
         self.img = img
     
-    def _get_new_color_2(self, old_color, n_colors=2):
+    def _get_new_color(self, old_color, n_colors=2):
         """
         Get the "closest" colour to old_val in the range [0,1] per channel divided
         into nc values.
@@ -127,7 +127,7 @@ class ImageOps:
         return np.round(old_color * (n_colors - 1)) / (n_colors - 1)
     
     
-    def _get_new_color(self, old_color, n_colors=2):
+    def _get_new_color_2(self, old_color, n_colors=2):
         p = np.linspace(0, 1, n_colors)
         p = np.array(list(product(p,p,p)))
         
