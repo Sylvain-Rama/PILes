@@ -19,7 +19,8 @@ PIL wrapper to draw complex geometric shapes
 
 And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
-![final](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/Sunflower2.jpg)
+![Examples1](https://user-images.githubusercontent.com/60986961/194337536-4c1f72a4-e6aa-4f85-acf4-c78f1375c00b.png)
+
 
 Module allows to draw shapes at desired points, lines and other images as well. Modify their attributes according to axis, distances to centre, etc...
 
