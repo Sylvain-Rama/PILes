@@ -16,7 +16,6 @@ class _BaseFunction:
             raise ValueError(
                 f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
             )
-            
 
     def _normalize(self, r):
         return (r - r.min()) / (r.max() - r.min())
@@ -95,40 +94,31 @@ class Angle(_BaseFunction):
 
 
 class Neighbors(_BaseFunction):
-    '''This class will output weights depending on the number of neighbors around each point.
+    """This class will output weights depending on the number of neighbors around each point.
     Neighbors can be taken from another distribution.
-    '''
-    
-    
+    """
+
     def n_neighbors(self, x=None, y=None, dist=0.2):
         from scipy.spatial import cKDTree
-        
+
         self.points = np.stack((self.x, self.y), axis=1)
-        
+
         if (x is None) | (y is None):
             pop = np.stack((self.x, self.y), axis=1)
-        
         else:
             pop = np.stack((x, y), axis=1)
-            
         tree = cKDTree(pop)
         s = []
         for point in self.points:
             n = tree.query_ball_point(point, dist)
             s = np.append(s, len(n))
-            
         return self._normalize(s)
-        
-    
+
 
 class Modify(_BaseFunction):
-    ''' Class used to modify already generated distributions.
-    '''
-    
-    def normalize(self):
-        return self._normalize(self.x), self._normalize(self.y)
-    
-    
+    """ Class used to modify already generated distributions.
+    """
+
     def rotate(self, angle=10, centre=(0, 0)):
 
         self.x += centre[0]
@@ -136,46 +126,41 @@ class Modify(_BaseFunction):
 
         r, theta = self._cart_to_pol(self.x, self.y)
         theta = theta + angle / 360 * 2 * np.pi
-        
+
         x, y = self._pol_to_cart(r, theta)
-        
+
         x -= centre[0]
         y -= centre[1]
 
         return x, y
-    
-    
+
     def jitter(self, x=0.1, y=0.1):
-        
-        j_x = np.random.uniform(-x, x, size = len(self.x))
-        j_y = np.random.uniform(-y, y, size = len(self.y))
-        
+
+        j_x = np.random.uniform(-x, x, size=len(self.x))
+        j_y = np.random.uniform(-y, y, size=len(self.y))
+
         return self.x + j_x, self.y + j_y
-    
+
     def interleave(self, x, y):
         if len(x) != len(y):
             raise ValueError(
                 f"x and y coordinates must have the same length but got {len(x)} and {len(y)}."
             )
-            
-        
         if (len(x) != len(self.x)) | (len(y) != len(self.y)):
             raise ValueError(
                 f"Arrays to interleave must have the same length but got ({len(self.x)}, {len(self.y)} and ({len(x)}, {len(y)}."
             )
-            
-        
         int_x = np.empty((self.x.size + x.size,), dtype=float)
         int_x[0::2] = self.x
         int_x[1::2] = x
-        
+
         int_y = np.empty((self.y.size + y.size,), dtype=float)
         int_y[0::2] = self.y
         int_y[1::2] = y
-        
+
         return int_x, int_y
-        
-        
+
+
 if __name__ == "__main__":
     # If called by itself, demonstrate the use of the functions.
     from distributions import Parametric
@@ -208,7 +193,8 @@ if __name__ == "__main__":
     ax[3].set_title("Sizes depending on distance & angle")
 
     fig.suptitle(
-        "Attributes can be modified by distance from centre and theta angle", fontsize=18
+        "Attributes can be modified by distance from centre and theta angle",
+        fontsize=18,
     )
     fig.tight_layout(pad=1.2)
 
@@ -236,7 +222,7 @@ if __name__ == "__main__":
     ax[2].scatter(x, y, s=20, c="red")
     ax[2].scatter(x3, y3, s=20, c="black")
     ax[2].set_title("Points with added jitter")
-    
+
     fig2.suptitle("Distributions can be further modified", fontsize=18)
     fig2.tight_layout(pad=1.2)
 

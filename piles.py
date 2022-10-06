@@ -89,34 +89,38 @@ class PILe:
 # Will match '3-gon', '4-gon', etc...
 n_gons_patterns = re.compile("^\d+-gon$")
 
+
 class GroupImages:
     def __init__(self, imgs):
         self.imgs = imgs
-        
-        
-    def multidraw(self, nrows=1, ncols=1, border=0, background_color=(255, 255, 255, 255)):
+
+    def multidraw(
+        self, nrows=1, ncols=1, border=0, background_color=(255, 255, 255, 255)
+    ):
         img_width = max([x.width for x in self.imgs])
         img_height = max([x.height for x in self.imgs])
-        
+
         final_width = img_width * ncols + border * (ncols + 1)
         final_height = img_height * nrows + border * (nrows + 1)
-        
-        final_img = Image.new("RGBA", final_width, final_height, background_color)
-        
+
+        final_img = Image.new("RGBA", (final_width, final_height), background_color)
+
         idx = 0
-        for i in nrows:
-            for j in ncols:
-                
-                final_img.paste(self.imgs[idx], border + i * img_width, border + j * img_height )
-                
+        for i in range(ncols):
+            for j in range(nrows):
+                x = border + i * img_width
+                y = border + j * img_height
+
+                if idx < len(self.imgs):
+                    final_img.paste(self.imgs[idx], (x, y))
                 idx += 1
-                
         return final_img
+
 
 class ImageOps:
     def __init__(self, img):
         self.img = img
-    
+
     def _get_new_color(self, old_color, n_colors=2):
         """
         Get the "closest" colour to old_val in the range [0,1] per channel divided
@@ -125,21 +129,15 @@ class ImageOps:
         """
 
         return np.round(old_color * (n_colors - 1)) / (n_colors - 1)
-    
-    
+
     def _get_new_color_2(self, old_color, n_colors=2):
         p = np.linspace(0, 1, n_colors)
-        p = np.array(list(product(p,p,p)))
-        
-        idx = np.argmin(np.sum((old_color[None,:] - p)**2, axis=1))
-        
-        
+        p = np.array(list(product(p, p, p)))
+
+        idx = np.argmin(np.sum((old_color[None, :] - p) ** 2, axis=1))
+
         return p[idx]
-        
-    
-    
-    
-    
+
     def dither(self, n_colors=2):
         """
         Floyd-Steinberg dither the image img into a palette with nc colours per
@@ -160,28 +158,26 @@ class ImageOps:
                 err = old_val - new_val
                 # In this simple example, we will just ignore the border pixels.
                 if ic < width - 1:
-                    arr[ir, ic+1] += err * 7/16
+                    arr[ir, ic + 1] += err * 7 / 16
                 if ir < height - 1:
                     if ic > 0:
-                        arr[ir+1, ic-1] += err * 3/16
-                    arr[ir+1, ic] += err * 5/16
+                        arr[ir + 1, ic - 1] += err * 3 / 16
+                    arr[ir + 1, ic] += err * 5 / 16
                     if ic < width - 1:
-                        arr[ir+1, ic+1] += err / 16
+                        arr[ir + 1, ic + 1] += err / 16
+        carr = np.array(arr / np.max(arr, axis=(0, 1)) * 255, dtype=np.uint8)
 
-        carr = np.array(arr/np.max(arr, axis=(0,1)) * 255, dtype=np.uint8)
-        
         return Image.fromarray(carr)
-    
+
     def reduce_palette(self, n_colors):
         """Simple palette reduction without dithering."""
         arr = np.array(self.img, dtype=float) / 255
         arr = self._get_new_color(arr, n_colors)
-    
-        carr = np.array(arr/np.max(arr) * 255, dtype=np.uint8)
-        
+
+        carr = np.array(arr / np.max(arr) * 255, dtype=np.uint8)
+
         return Image.fromarray(carr)
-        
-    
+
 
 class ImageDraws(ImageDraw):
     """ Main class for drawing multiple shapes with a single call.
@@ -349,7 +345,8 @@ class ImageDraws(ImageDraw):
 
         # Scaling x & y and centering them in the image.
         xs = xs * (params.width) / 2 + self.img.width / 2
-        ys = ys * (params.height) / 2 + self.img.height / 2
+        # Inverting y as image coordinates are inverted
+        ys = -ys * (params.height) / 2 + self.img.height / 2
 
         all_params = zip(
             shapes, xs, ys, sizes, alphas, colors, outlines, widths, angles, ratios
@@ -400,14 +397,11 @@ class ImageDraws(ImageDraw):
                     x, y, size, n_sides, fill_color, outline, width, angle, ratio
                 )
 
-
     def _draw_single_line(self, x1, y1, x2, y2, width, outline):
         tmp_width = abs(x1 - x2) + 2 * width
         tmp_height = abs(y1 - y2) + 2 * width
 
-        tmp = Image.new(
-            "RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0)
-        )
+        tmp = Image.new("RGBA", (int(tmp_width), int(tmp_height)), (255, 255, 255, 0))
         tmp_draw = ImageDraw(tmp)
 
         tmp_draw.line(
@@ -427,8 +421,6 @@ class ImageDraws(ImageDraw):
             tmp = tmp.transpose(Image.FLIP_TOP_BOTTOM)
             corner_y = y2 - width
         self.img.alpha_composite(tmp, dest=(int(corner_x), int(corner_y)))
-        
-        
 
     def DrawLines(self, params=PILe, continuous=True, closed=False):
         # Same as DrawShapes, but for lines.
@@ -447,44 +439,40 @@ class ImageDraws(ImageDraw):
         alphas = [int(x) for x in alphas]
 
         xs = xs * (params.width) / 2 + self.img.width / 2
-        ys = ys * (params.height) / 2 + self.img.height / 2
+        # Inverting y coordinates for image.
+        ys = -ys * (params.height) / 2 + self.img.height / 2
 
         # We may want to close the figure, thus drawing a line between
         # the last and the first point.
         if closed:
             xs = np.append(xs, xs[0])
             ys = np.append(ys, ys[0])
-        
-        
         if continuous:
-            
+
             for i in range(len(xs) - 1):
-    
+
                 x1, x2 = xs[i], xs[i + 1]
                 y1, y2 = ys[i], ys[i + 1]
-    
+
                 width = widths[i]
                 outline = outlines[i]
                 alpha = alphas[i]
-                
+
                 outline = self._return_proper_color(outline, alpha)
-    
+
                 self._draw_single_line(x1, y1, x2, y2, width, outline)
-    
-                
         else:
-            for i in range (len(xs) // 2):
-                x1, x2 = xs[i*2], xs[i*2 + 1]
-                y1, y2 = ys[i*2], ys[i*2 + 1]
-                
-                width = widths[i*2]
-                outline = outlines[i*2]
-                alpha = alphas[i*2]
-                
+            for i in range(len(xs) // 2):
+                x1, x2 = xs[i * 2], xs[i * 2 + 1]
+                y1, y2 = ys[i * 2], ys[i * 2 + 1]
+
+                width = widths[i * 2]
+                outline = outlines[i * 2]
+                alpha = alphas[i * 2]
+
                 outline = self._return_proper_color(outline, alpha)
-    
+
                 self._draw_single_line(x1, y1, x2, y2, width, outline)
-                
 
     def DrawImages(self, params=PILe):
         # Main method to draw multiple images in one call.
@@ -519,18 +507,16 @@ class ImageDraws(ImageDraw):
                 img3 = img2.copy()
                 img3.putalpha(alpha)
                 img2.paste(img3, img2)
-                
             if size != 1:
                 width, height = img2.size
-                img2 = img2.resize((int(width*size), int(height*size)), resample=Image.LANCZOS)
-                
+                img2 = img2.resize(
+                    (int(width * size), int(height * size)), resample=Image.LANCZOS
+                )
             if ratio != 1:
                 width, height = img2.size
-                img2 = img2.resize((int(width*ratio), height), resample=Image.LANCZOS)
-                
+                img2 = img2.resize((int(width * ratio), height), resample=Image.LANCZOS)
             if angle != 0:
                 img2 = img2.rotate(angle, expand=True, resample=Image.BICUBIC)
-                
             tmp_x, tmp_y = img2.size
             tmp_x /= 2
             tmp_y /= 2
