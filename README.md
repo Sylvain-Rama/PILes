@@ -17,12 +17,12 @@ PIL wrapper to draw complex geometric shapes
 
 ![palette](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/palette.png)
 
-And combine all of that in a PIL extension to draw multiple shapes in a canvas:
+## And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
 ![Examples1](https://user-images.githubusercontent.com/60986961/194337536-4c1f72a4-e6aa-4f85-acf4-c78f1375c00b.png)
 
 
-Module allows to draw shapes at desired points, lines and other images as well. Modify their attributes according to axis, distances to centre, etc...
+Module allows to draw shapes at desired points, lines and other images as well. Modify their attributes according to axis, distances to centre, other distributions, etc...
 
 ![Examples2](https://user-images.githubusercontent.com/60986961/182819718-85d3c930-0c74-4658-860f-5b95115b7107.png)
 
