@@ -7,15 +7,16 @@ Created on Mon May 23 12:31:10 2022
 
 
 import numpy as np
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 import re
 from math import prod
 from itertools import product
 
 from helpers import color_dict, polygon_dict
 
-from PIL import Image
-from PIL.ImageDraw import ImageDraw, _compute_regular_polygon_vertices
+from PIL import Image, ImageFont
+
+from PIL.ImageDraw import ImageDraw, Draw, _compute_regular_polygon_vertices
 
 
 @dataclass
@@ -83,6 +84,43 @@ class PILe:
     widths = 3
     angles = 0
     ratios = 1
+    
+    
+    def _RGBtuple_to_RGBint(self):
+        
+        if not isinstance(self.colors, (list, np.ndarray)):
+            self.colors = [self.colors]
+            
+        return np.asarray([RGBtuple[0] << 16 | RGBtuple[1] << 8 | RGBtuple[2] for RGBtuple in self.colors])
+    
+    def _RGBint_to_RGBtuple(self):
+        if not isinstance(self.colors, (list, np.ndarray)):
+            self.colors = [self.colors]
+        
+        return [(RGBint // 256 // 256 % 256, RGBint // 256 % 256, RGBint % 256) for RGBint in self.colors]
+        
+    def sort_colors(self, idx):
+        c = self._RGBtuple_to_RGBint(self.colors)
+        
+        c = c[idx]
+        
+        self.colors = self._RGBint_to_RGBtuple(c)
+        
+        return self
+    
+    def sort(self, sort=['coords', 'sizes', 'colors'], by='sizes', ascending=True):
+        
+        print([x for x in dir(self) if '__' not in x])
+        
+        if by not in dir(self):
+            raise ValueError(f'{by} not in argument list.')
+            
+        for arg in sort:
+            if arg not in dir(self):
+                raise ValueError(f'{arg} not in argument list.')
+    
+        pass
+    
 
 
 # Regex for parsing the names of n-gons.
@@ -95,25 +133,42 @@ class GroupImages:
         self.imgs = imgs
 
     def multidraw(
-        self, nrows=1, ncols=1, border=0, background_color=(255, 255, 255, 255)
+        self, nrows=1, ncols=1, border=0, up=0, 
+        background_color=(255, 255, 255, 255),
+        titles = []
     ):
+        
+        if ((len(titles) > 0) & (up < 20)):
+            up = 20
+        
+        font = ImageFont.truetype("arial.ttf", 18)
+        
+        
         img_width = max([x.width for x in self.imgs])
         img_height = max([x.height for x in self.imgs])
 
         final_width = img_width * ncols + border * (ncols + 1)
-        final_height = img_height * nrows + border * (nrows + 1)
+        final_height = (img_height+up) * nrows + border * (nrows + 1)
 
         final_img = Image.new("RGBA", (final_width, final_height), background_color)
-
+        txtdrawer = Draw(final_img)
         idx = 0
-        for i in range(ncols):
-            for j in range(nrows):
-                x = border + i * img_width
-                y = border + j * img_height
+        for i in range(nrows):
+            for j in range(ncols):
+                x = border + j * img_width
+                y = border + i * img_height
 
                 if idx < len(self.imgs):
-                    final_img.paste(self.imgs[idx], (x, y))
+                    
+                    final_img.paste(self.imgs[idx], (x, y+up*(i+1)))
+                    
+                if idx < len(titles):
+                    
+                    txtdrawer.text((x, y+up*i), titles[idx], font = font, fill=(0, 0, 0, 255))
                 idx += 1
+                
+       
+        
         return final_img
 
 
@@ -121,53 +176,191 @@ class ImageOps:
     def __init__(self, img):
         self.img = img
 
-    def _get_new_color(self, old_color, n_colors=2):
-        """
-        Get the "closest" colour to old_val in the range [0,1] per channel divided
-        into nc values.
 
-        """
+    def dither(self, kernel = 'Floyd-Steinberg', nc = 2):
+        
+        def _get_new_val(old_val, nc):
+            
+            """
+            Get the "closest" colour to old_val in the range [0,1] per channel divided
+            into nc values. This works well for B&W pictures, but nor for RGB ones.
+            If nc = 2, this means 2 possible values per channel and hence 2^3 = 8 different colors.
 
-        return np.round(old_color * (n_colors - 1)) / (n_colors - 1)
+            """
 
-    def _get_new_color_2(self, old_color, n_colors=2):
-        p = np.linspace(0, 1, n_colors)
-        p = np.array(list(product(p, p, p)))
-
-        idx = np.argmin(np.sum((old_color[None, :] - p) ** 2, axis=1))
-
-        return p[idx]
-
-    def dither(self, n_colors=2):
-        """
-        Floyd-Steinberg dither the image img into a palette with nc colours per
-        channel.
-        Taken from https://scipython.com/blog/floyd-steinberg-dithering/
-
-        """
-        width = self.img.width
-        height = self.img.height
+            return np.round(old_val * (nc - 1)) / (nc - 1)
+        
+        dither_kernels = {'Floyd-Steinberg': [[0, 0, 0],
+                                              [0, 0, 7],
+                                              [3, 5, 1]],
+                          
+                          'Jarvis-Judis-Ninke': [[0, 0, 0, 0, 0, 0, 0],
+                                                 [0, 0, 0, 0, 0, 0, 0],
+                                                 [0, 0, 0, 0, 7, 5, 0],
+                                                 [0, 0, 3, 5, 7, 5, 3],
+                                                 [0, 0, 1, 3, 5, 3, 1]],
+                          
+                          'Stucki': [[0, 0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 8, 4, 0],
+                                     [0, 0, 2, 4, 8, 4, 2],
+                                     [0, 0, 1, 2, 4, 2, 1]],
+                          
+                          'Atkinson': [[0, 0, 0, 0, 0],
+                                       [0, 0, 0, 0, 0],
+                                       [0, 0, 0, 1, 1],
+                                       [0, 1, 1, 1, 0],
+                                       [0, 0, 1, 0, 0]],
+                              
+        }
+        if kernel not in dither_kernels.keys():
+            raise ValueError(f'Available dithering kernels are {dither_kernels.keys()}')
+        
+        
+        width, height = self.img.size
         arr = np.array(self.img, dtype=float) / 255
+        
 
+        ker = dither_kernels[kernel]
+        ker = ker / np.sum(ker)
+        
+        
+        ker_h, ker_w, = ker.shape
+        
+        ker_h = ker_h // 2
+        ker_w = ker_w // 2
+        
+        pad = max(ker_h, ker_w)
+        
+        if len(arr.shape) == 3:
+            
+            arr = np.pad(arr, ((pad, pad), (pad, pad), (0, 0)), 'constant')
+            ker = np.repeat(ker[:, :, np.newaxis], 3, axis=2)
+            
+        else:
+            arr = np.pad(arr, pad)
+            
         for ir in range(height):
             for ic in range(width):
-                # NB need to copy here for RGB arrays otherwise err will be (0,0,0)!
-                old_val = arr[ir, ic].copy()
-                new_val = self._get_new_color(old_val, n_colors)
-                arr[ir, ic] = new_val
-                err = old_val - new_val
-                # In this simple example, we will just ignore the border pixels.
-                if ic < width - 1:
-                    arr[ir, ic + 1] += err * 7 / 16
-                if ir < height - 1:
-                    if ic > 0:
-                        arr[ir + 1, ic - 1] += err * 3 / 16
-                    arr[ir + 1, ic] += err * 5 / 16
-                    if ic < width - 1:
-                        arr[ir + 1, ic + 1] += err / 16
-        carr = np.array(arr / np.max(arr, axis=(0, 1)) * 255, dtype=np.uint8)
+        
+                old_val = arr[ir+pad, ic+pad].copy()
+                new_val = _get_new_val(old_val, nc)
+                 
+                arr[ir+pad, ic+pad] = new_val
+                err = old_val - new_val        
+                err_ker = err * ker
+        
+                arr[ir + pad - ker_h : ir + pad + ker_h + 1, 
+                    ic + pad - ker_w : ic + pad + ker_w + 1] += err_ker
+                
+        carr = np.array(arr/np.max(arr, axis=(0,1)) * 255, dtype=np.uint8)[pad:-pad, pad:-pad]
+        
+        dithered = Image.fromarray(carr)
+        
+        return dithered
+    
+    
+    
+    def quadtree(self, std_thr, outline_width=0):
+        
+        # We will save the coordinates in this dict.
+        results = {'top': [],
+                   'left' : [],
+                   'x' : [],
+                   'y' : [],
+                   'width' : [],
+                   'height' : [],
+                   'color' : []}
+        
+        def RGB_std(arr):
+            # Does a sneaky conversion to (R, G, B) if the image was in U8.
+            # It was easier as PILe accepts (R, G, B) colors.
+            if len(arr.shape) > 2:
+                
+                R = arr[:, :, 0]
+                G = arr[:, :, 1]
+                B = arr[:, :, 2]
+                
+                std = max(np.std(R), np.std(G), np.std(B))
+                col = (int(np.mean(R)), int(np.mean(G)), int(np.mean(B)))
+                
+            else:
+                std = np.std(arr)
+                col = (int(np.mean(arr)), int(np.mean(arr)), int(np.mean(arr)))
+            
+            return std, col
+        
+        def subdivide(arr, thr, topleft, width, height, results):
+            
+            left, top = topleft # not smart...
+            to_check = arr[top:top+height, left:left+width]
+           
+            std, col = RGB_std(to_check)
+            
+            if np.isnan(std):
+                raise ValueError('Error happened at coordinates x={left}, y={top} with width={width}, height={height}')
+                          
+            # Ending if std below threshold or if the subdivision is 1 pixel
+            if ((std < thr) | (width < 2) | (height < 2)):
+                # And saving the values, of course.
+                results['top'] += [top]
+                results['left'] += [left]
+                results['x'] += [left + width/2]
+                results['y'] += [top + height/2]
+                results['width'] += [width]
+                results['height'] += [height]
+                results['color'] += [col]
+                
+                return
 
-        return Image.fromarray(carr)
+            else:
+                
+                x2 = int(left + width/2)
+                y2 = int(top + height/2)
+                
+                # Coordinates of the 4 top-left corner of the new subdivisions.
+                c1 = (left, top)
+                c2 = (x2, top) 
+                c3 = (x2, y2)
+                c4 = (left, y2)
+                
+                new_width = int(np.floor(width / 2))
+                new_height = int(np.floor(height / 2))
+                
+                # Aaaand recursion.
+                for c in [c1, c2, c3, c4]:
+                    subdivide(arr, thr, c, new_width, new_height, results)
+        
+        
+        
+        
+        img_width, img_height = self.img.size
+
+        arr = np.asarray(self.img)
+        
+        subdivide(arr, std_thr, (0, 0), img_width, img_height, results)
+        
+        
+        # Drawing the new image from the coordinates & values stored in the dict
+        quad_img = Image.new("RGBA", (img_width, img_height), (255, 0, 0, 0))
+        drawer = Draw(quad_img)
+
+        for a, b, w, h, c in zip(results['left'], results['top'], 
+                                 results['width'], results['height'], 
+                                 results['color']):
+            
+            drawer.rectangle([a, b, a+w, b+h], 
+                             fill = c, width=outline_width, 
+                             outline=(0, 0, 0, 255))
+            
+        return quad_img, results
+
+    
+        
+        
+    
+    
+    
 
     def reduce_palette(self, n_colors):
         """Simple palette reduction without dithering."""
@@ -233,16 +426,21 @@ class ImageDraws(ImageDraw):
             Final color value.
 
         """
-
+        fill_color = None
         if isinstance(color, str):
             color = color_dict[color.upper()]
-        if color == None:
-            fill_color = None
+        # if color.any() == None:
+        #     fill_color = None
         else:
             if len(color) < 4:
                 fill_color = (*color, alpha)
             else:
                 fill_color = color
+                
+        if isinstance(fill_color, (list, np.ndarray)):
+            fill_color=tuple(fill_color)
+            
+            
         return fill_color
 
     def _generic_drawer(
@@ -346,7 +544,7 @@ class ImageDraws(ImageDraw):
         # Scaling x & y and centering them in the image.
         xs = xs * (params.width) / 2 + self.img.width / 2
         # Inverting y as image coordinates are inverted
-        ys = -ys * (params.height) / 2 + self.img.height / 2
+        ys = ys * (params.height) / 2 + self.img.height / 2
 
         all_params = zip(
             shapes, xs, ys, sizes, alphas, colors, outlines, widths, angles, ratios
