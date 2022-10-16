@@ -420,27 +420,24 @@ class ImageDraws(ImageDraw):
         alpha : int8
             Alpha value, from 0 to 255.
 
-        Returns
+        Returnss
         -------
         fill_color : tuple (R, G, B, A) of int8
             Final color value.
 
         """
-        fill_color = None
+        
+        if color == None:
+            return None
+        
         if isinstance(color, str):
             color = color_dict[color.upper()]
-        # if color.any() == None:
-        #     fill_color = None
+        
+        if len(color) < 4:
+            fill_color = (*color, alpha)
         else:
-            if len(color) < 4:
-                fill_color = (*color, alpha)
-            else:
-                fill_color = color
-                
-        if isinstance(fill_color, (list, np.ndarray)):
-            fill_color=tuple(fill_color)
-            
-            
+            fill_color = color
+ 
         return fill_color
 
     def _generic_drawer(
@@ -457,6 +454,7 @@ class ImageDraws(ImageDraw):
             (int(size * 2 * ratio + width * 2 + 1), int(size * 2 + width * 2 + 1)),
             (255, 255, 255, 0),
         )
+        
         tmp_draw = ImageDraw(tmp)
         # Simply get the method from the class and use it.
         getattr(tmp_draw, shape)(
@@ -544,7 +542,7 @@ class ImageDraws(ImageDraw):
         # Scaling x & y and centering them in the image.
         xs = xs * (params.width) / 2 + self.img.width / 2
         # Inverting y as image coordinates are inverted
-        ys = ys * (params.height) / 2 + self.img.height / 2
+        ys =  - ys * (params.height) / 2 + self.img.height / 2
 
         all_params = zip(
             shapes, xs, ys, sizes, alphas, colors, outlines, widths, angles, ratios
@@ -695,7 +693,7 @@ class ImageDraws(ImageDraw):
 
         # Scaling x & y and centering them in the image.
         xs = xs * (params.width) / 2 + self.img.width / 2
-        ys = ys * (params.height) / 2 + self.img.height / 2
+        ys =  - ys * (params.height) / 2 + self.img.height / 2
 
         all_params = zip(imgs, xs, ys, sizes, alphas, angles, ratios)
 
