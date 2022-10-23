@@ -96,9 +96,19 @@ class PILe:
     def _RGBint_to_RGBtuple(self):
         if not isinstance(self.colors, (list, np.ndarray)):
             self.colors = [self.colors]
+            
+        final_arr = []
+        for RGBint in self.colors:
+            B = RGBint & 255
+            G = (RGBint >> 8) & 255
+            R = (RGBint >> 16) & 255
         
-        return [(RGBint // 256 // 256 % 256, RGBint // 256 % 256, RGBint % 256) for RGBint in self.colors]
-        
+            final_arr.append((R, G, B))
+            
+        return final_arr
+            
+            
+            
     def sort_colors(self, idx):
         c = self._RGBtuple_to_RGBint(self.colors)
         
@@ -106,11 +116,9 @@ class PILe:
         
         self.colors = self._RGBint_to_RGBtuple(c)
         
-        return self
-    
-    def sort(self, sort=['coords', 'sizes', 'colors'], by='sizes', ascending=True):
         
-        print([x for x in dir(self) if '__' not in x])
+    
+    def sort(self, sort=['coords', 'sizes', 'colors', 'ratios'], by='sizes', descending=True):
         
         if by not in dir(self):
             raise ValueError(f'{by} not in argument list.')
@@ -118,8 +126,35 @@ class PILe:
         for arg in sort:
             if arg not in dir(self):
                 raise ValueError(f'{arg} not in argument list.')
+        
+        
+        sorted_idx = np.argsort(getattr(self, by))
+        if descending:
+            sorted_idx = sorted_idx[::-1]
+            
+        
+        
+        if 'coords' in sort:
+            sort.remove('coords')
+            x, y = getattr(self, 'coords')
+            new_x = np.asarray(x)[sorted_idx]
+            new_y = np.asarray(y)[sorted_idx]
+            setattr(self, 'coords', (new_x, new_y))
+       
+        if 'colors' in sort:
+            
+            self.colors = self._RGBtuple_to_RGBint()
+            
+        
+        for field in sort:
+            new = getattr(self, field)
+            
+            setattr(self, field, list(np.asarray(new)[sorted_idx]))
+        
+        if 'colors' in sort:
+            self.colors = self._RGBint_to_RGBtuple()
     
-        pass
+        
     
 
 
@@ -140,23 +175,22 @@ class GroupImages:
         
         if ((len(titles) > 0) & (up < 20)):
             up = 20
-        
+         
         font = ImageFont.truetype("arial.ttf", 18)
-        
-        
+                
         img_width = max([x.width for x in self.imgs])
         img_height = max([x.height for x in self.imgs])
 
         final_width = img_width * ncols + border * (ncols + 1)
-        final_height = (img_height+up) * nrows + border * (nrows + 1)
+        final_height = (img_height + up) * nrows + border * (nrows + 1)
 
         final_img = Image.new("RGBA", (final_width, final_height), background_color)
         txtdrawer = Draw(final_img)
         idx = 0
         for i in range(nrows):
             for j in range(ncols):
-                x = border + j * img_width
-                y = border + i * img_height
+                x = j * (img_width + border)
+                y = i * (img_height + border)
 
                 if idx < len(self.imgs):
                     
@@ -330,10 +364,7 @@ class ImageOps:
                 # Aaaand recursion.
                 for c in [c1, c2, c3, c4]:
                     subdivide(arr, thr, c, new_width, new_height, results)
-        
-        
-        
-        
+  
         img_width, img_height = self.img.size
 
         arr = np.asarray(self.img)
@@ -353,13 +384,26 @@ class ImageOps:
                              fill = c, width=outline_width, 
                              outline=(0, 0, 0, 255))
             
-        return quad_img, results
+        # Creating a PILe object
+        quad_pile = PILe()
+        
+        x = np.asarray(results['x']) - (img_width / 2)
+        y = np.asarray(results['y']) - (img_height / 2)
+        s = np.asarray(results['height']) / 2
+        r = np.asarray(results['width']) / np.asarray(results['height'])
+        c = results['color']
+        
+        quad_pile.coords = x, -y # -y as images y coords are flipped
+        quad_pile.sizes = s
+        quad_pile.ratios = r
+        quad_pile.colors = c
+        quad_pile.shapes = 'rectangle'
+        quad_pile.angles = 0
+        quad_pile.widths = 0
+            
+            
+        return quad_img, quad_pile, results
 
-    
-        
-        
-    
-    
     
 
     def reduce_palette(self, n_colors):
@@ -496,7 +540,7 @@ class ImageDraws(ImageDraw):
 
         tmp = Image.new(
             "RGBA",
-            (int(size * 2 * ratio + width), int(size * 2 + width)),
+            (int(size * 2 + width), int(size * 2 + width)),
             (255, 255, 255, 0),
         )
         tmp_draw = ImageDraws(tmp)
@@ -513,7 +557,13 @@ class ImageDraws(ImageDraw):
             outline=outline,
             width=width,
         )
-
+        
+        # if size < 1:
+        #     size = 1
+        # resized = int((size + width) * 5 * ratio)
+        
+        # tmp = tmp.resize((resized, int(size)), resample=Image.BICUBIC)
+        
         # And pasting with alpha.
         self.img.alpha_composite(
             tmp, (int(x - tmp_x + width / 2), int(y - tmp_y + width / 2))
