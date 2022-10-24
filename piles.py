@@ -107,8 +107,6 @@ class PILe:
             
         return final_arr
             
-            
-            
     def sort_colors(self, idx):
         c = self._RGBtuple_to_RGBint(self.colors)
         
@@ -116,8 +114,6 @@ class PILe:
         
         self.colors = self._RGBint_to_RGBtuple(c)
         
-        
-    
     def sort(self, sort=['coords', 'sizes', 'colors', 'ratios'], by='sizes', descending=True):
         
         if by not in dir(self):
@@ -131,8 +127,6 @@ class PILe:
         sorted_idx = np.argsort(getattr(self, by))
         if descending:
             sorted_idx = sorted_idx[::-1]
-            
-        
         
         if 'coords' in sort:
             sort.remove('coords')
@@ -142,7 +136,6 @@ class PILe:
             setattr(self, 'coords', (new_x, new_y))
        
         if 'colors' in sort:
-            
             self.colors = self._RGBtuple_to_RGBint()
             
         
@@ -155,9 +148,6 @@ class PILe:
             self.colors = self._RGBint_to_RGBtuple()
     
         
-    
-
-
 # Regex for parsing the names of n-gons.
 # Will match '3-gon', '4-gon', etc...
 n_gons_patterns = re.compile("^\d+-gon$")

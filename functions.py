@@ -118,6 +118,9 @@ class Neighbors(_BaseFunction):
 class Modify(_BaseFunction):
     """ Class used to modify already generated distributions.
     """
+    
+    def normalize(self):
+        return self._normalize(self.x), self._normalize(self.y)
 
     def rotate(self, angle=10, centre=(0, 0)):
 
