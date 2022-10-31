@@ -197,6 +197,33 @@ class GroupImages:
 class ImageOps:
     def __init__(self, img):
         self.img = img
+        
+        
+    def _return_proper_values(self, values, n=100):
+        """
+        If a single element, converts it to a list of these elements, of length n.
+        If a numpy array, coerce it to length n.
+        Parameters
+        ----------
+        values : int, float, [int], [float] or np.asarray()
+
+        n : list or np.asarray()
+            number of elements to create in the list. The default is 100.
+
+        Returns
+        -------
+        values : list or np.asarray() of length n
+
+        """
+
+        if isinstance(values, np.ndarray):
+            if values.size < n:
+                return np.resize(values, n)
+        if not isinstance(values, (list, np.ndarray)):
+            values = [values]
+        if len(values) < n:
+            values = values * (n // len(values))
+        return values
 
     def dither(self, kernel='Floyd-Steinberg', nc=2):
 
@@ -387,6 +414,8 @@ class ImageOps:
         return quad_img, quad_pile, results
 
     def to_pile_images(self, params=PILe):
+        
+        params.images = []
 
         img_width, img_height = self.img.size
 
@@ -396,7 +425,7 @@ class ImageOps:
             xs = np.asarray(xs)
         if not isinstance(ys, np.ndarray):
             ys = np.asarray(ys)
-        # Building all the arrays of parmeters with proper length.
+        
         shapes = self._return_proper_values(params.shapes, len(xs))
         sizes = self._return_proper_values(params.sizes, len(xs))
         widths = self._return_proper_values(params.widths, len(xs))
@@ -418,12 +447,12 @@ class ImageOps:
             x,
             y,
             size,
-
             width,
             angle,
             ratio,
         ) in all_params:
-
+            
+            
             tmp_pile = PILe()
             tmp_pile.sizes = size
             tmp_pile.shapes = shape
@@ -431,21 +460,22 @@ class ImageOps:
             tmp_pile.widths = width
             tmp_pile.ratios = ratio
 
-            maskIm = Image.new(
-                'RGBA', (int(size*2*ratio+width), int(size*2+width)), 0)
-            pilesdrawer = ImageDraws(maskIm)
-            pilesdrawer.DrawShapes(tmp_pile)
-
-            mask = np.array(maskIm)
-
             cropped_img = np.array(self.img.crop(
                 (x-size*ratio, y-size, x+size*ratio, y+size)))
-
+            
+            maskIm = Image.new(
+                'RGBA', (cropped_img.shape[1], cropped_img.shape[0]), 0)
+            pilesdrawer = ImageDraws(maskIm)
+            pilesdrawer.DrawShapes(tmp_pile)
+            
+            mask = np.array(maskIm)
+            
             cropped_img[:, :, 3] = mask[:, :, 3]
 
             tile = Image.fromarray(cropped_img, "RGBA")
             params.images = params.images + [tile]
-
+            
+        params.sizes = 1
         return params
 
     def reduce_palette(self, n_colors):
