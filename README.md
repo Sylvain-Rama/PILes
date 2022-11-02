@@ -1,5 +1,5 @@
 # **PILes**
-PIL wrapper to draw complex geometric shapes
+PIL wrapper to draw multiple geometric shapes on the same canvas in a single call.
 
 ![Example](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/title_1.jpg)
 
