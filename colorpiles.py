@@ -6,6 +6,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import numpy as np
+import colorsys
 
 from helpers import color_dict
 
@@ -95,7 +96,31 @@ class ColorPile:
         return [tuple(x) for x in self.color_map]
 
     def invert(self):
-        return ColorPile(color_map=self.color_map[::-1], name=self.name + "_inverted")
+        return ColorPile(color_map=self.color_map[::-1], name=self.name + "-Inverted")
+
+    def to_HSL(self):
+        HLS_map = []
+        for r, g, b in self.color_map:
+            r, g, b = r / 255, g / 255, b / 255
+
+            h, l, s = colorsys.rgb_to_hls(r, g, b)
+
+            h, l, s = int(h * 255), int(l * 255), int(s * 255)
+
+            HLS_map.append((h, l, s))
+        return ColorPile(color_map=HLS_map, name=self.name + "-HLS")
+
+    def to_RGB(self):
+        RGB_map = []
+        for h, l, s in self.color_map:
+            h, l, s = h / 255, l / 255, s / 255
+
+            r, g, b = colorsys.hls_to_rgb(h, l, s)
+
+            r, g, b = int(r * 255), int(g * 255), int(b * 255)
+
+            RGB_map.append((r, g, b))
+        return ColorPile(color_map=RGB_map, name=self.name + "-RGB")
 
     def loop(self, n=1):
         color_map = self.color_map
@@ -103,7 +128,7 @@ class ColorPile:
             color_map = list(color_map)
         for i in range(n):
             color_map = color_map + self.color_map
-        name = self.name + f"-looped_{n}"
+        name = self.name + f"-Looped_{n}"
 
         return ColorPile(color_map=color_map, name=name)
 
@@ -115,7 +140,7 @@ class ColorPile:
         cmap = cmap[:, 0:3].astype(int)
         color_map = [tuple(x) for x in cmap]  # back to list of tuples for ease of use.
 
-        name = self.name + f"-extended_{n}"
+        name = self.name + f"-Extended_{n}"
 
         return ColorPile(color_map=color_map, name=name)
 
@@ -169,6 +194,42 @@ class ColorPile:
         else:
             return TypeError("Name must be a valid string.")
 
+    def shift(self, by=(0, 0, 0)):
+        shifted_map = []
+        for r, g, b in self.color_map:
+
+            r += by[0]
+            g += by[1]
+            b += by[2]
+
+            if r > 255:
+                r -= 255
+            if g > 255:
+                g -= 255
+            if b > 255:
+                b -= 255
+            shifted_map.append((r, g, b))
+        return ColorPile(color_map=shifted_map, name=self.name + "-Shifted")
+
+    def add_noise(self, by=(0, 0, 0)):
+
+        noisy_map = []
+                    
+        for r, g, b in self.color_map:
+
+            r += np.random.uniform(0, by[0])
+            g += np.random.uniform(0, by[1])
+            b += np.random.uniform(0, by[2])
+
+            if r > 255:
+                r -= 255
+            if g > 255:
+                g -= 255
+            if b > 255:
+                b -= 255
+            noisy_map.append((r, g, b))
+        return ColorPile(color_map=noisy_map, name=self.name + "-Noisy")
+
 
 if __name__ == "__main__":
     # Examples for the use of ColorPile class
@@ -176,10 +237,13 @@ if __name__ == "__main__":
     cmap2 = ColorPile().from_matplotlib("viridis", n=50).invert()
 
     cmap3 = (cmap1 + cmap2).loop(n=3).set_name("Special one")
-    print(cmap3)
+    # print(cmap3)
 
     cmap4 = (
         ColorPile().from_list(color_list=[(255, 0, 0), "yellow", "blue"]).extend(100)
     )
     cmap4 = cmap4 + cmap4.invert()
-    print(cmap4)
+    # print(cmap4)
+
+    cmap5 = cmap1.to_HSL().add_noise(by=(0, 50, 0)).to_RGB()
+    print(cmap1 + cmap5)
