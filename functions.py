@@ -5,6 +5,7 @@ They have to return a single array normalized betwen 0 and 1.
 """
 
 import numpy as np
+from PIL import Image
 
 
 class _BaseFunction:
@@ -93,12 +94,13 @@ class Angle(_BaseFunction):
         return self._normalize(theta)
 
 
-class Neighbors(_BaseFunction):
-    """This class will output weights depending on the number of neighbors around each point.
-    Neighbors can be taken from another distribution.
+class Weights(_BaseFunction):
+    """This class will output weights depending on outside parameters, 
+    such as the number of neighbors in other distributions, heightmaps, etc....
     """
 
     def n_neighbors(self, x=None, y=None, dist=0.2):
+        # This will produce a weight according to the number of neighbours in the x, y distributon.
         from scipy.spatial import cKDTree
 
         self.points = np.stack((self.x, self.y), axis=1)
@@ -113,6 +115,28 @@ class Neighbors(_BaseFunction):
             n = tree.query_ball_point(point, dist)
             s = np.append(s, len(n))
         return self._normalize(s)
+    
+    def heightmap(self, img):
+        # This will produce a weight according to an image used as heightmap.
+        
+        if not isinstance(img, Image.Image):
+            raise TypeError('The selected image must be a valid PIL image.')
+            
+        img = img.convert('L')
+        img_width, img_height = img.size
+        
+        all_x = self._normalize(self.x) * img_width - 1
+        all_y = self._normalize(- self.y) * img_height - 1
+        
+        z = []
+        for x, y in zip(all_x, all_y):
+            try:
+                z.append(img.getpixel((x, y)))
+            except:
+                print(img.size, x, y)
+            
+        return self._normalize(np.asarray(z))
+        
 
 
 class Modify(_BaseFunction):
