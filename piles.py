@@ -84,6 +84,7 @@ class PILe:
     widths = 3
     angles = 0
     ratios = 1
+    polys = []
 
     def _RGBtuple_to_RGBint(self):
 
@@ -144,6 +145,10 @@ class PILe:
 
         if 'colors' in sort:
             self.colors = self._RGBint_to_RGBtuple()
+            
+    
+    #def extract_colors(self):
+        
 
 
 # Regex for parsing the names of n-gons.
@@ -376,6 +381,8 @@ class ImageOps:
                 for c in [c1, c2, c3, c4]:
                     subdivide(arr, thr, c, new_width, new_height, results)
 
+
+        
         img_width, img_height = self.img.size
 
         arr = np.asarray(self.img)
@@ -412,6 +419,104 @@ class ImageOps:
         quad_pile.widths = 0
 
         return quad_img, quad_pile, results
+    
+    def quadtree_heightmap(self, thr, heightmap):
+
+        # We will save the coordinates in this dict.
+        results = {'top': [],
+                   'left': [],
+                   'x': [],
+                   'y': [],
+                   'width': [],
+                   'height': [],
+                   'color': []}
+
+        def RGB_std(arr, hmap):
+   
+            R = arr[:, :, 0]
+            G = arr[:, :, 1]
+            B = arr[:, :, 2]
+
+            col = (int(np.mean(R)), int(np.mean(G)), int(np.mean(B)))
+            weight = np.max(hmap)
+           
+            return weight, col
+
+        def subdivide(arr, thr, hmap, topleft, width, height, results):
+
+            left, top = topleft  # not smart...
+            to_check = arr[top:top+height, left:left+width]
+            hmap_tile = hmap[top:top+height, left:left+width]
+
+            weight, col = RGB_std(to_check, hmap_tile)
+            hmap = hmap - 0.1
+
+            if np.isnan(weight):
+                raise ValueError(
+                    'Error happened at coordinates x={left}, y={top} with width={width}, height={height}')
+
+            # Ending if std below threshold or if the subdivision is 1 pixel
+            if ((weight < thr) | (width < 2) | (height < 2)):
+                # And saving the values, of course.
+                results['top'] += [top]
+                results['left'] += [left]
+                results['x'] += [left + width/2]
+                results['y'] += [top + height/2]
+                results['width'] += [width]
+                results['height'] += [height]
+                results['color'] += [col]
+
+                return
+
+            else:
+
+                x2 = int(left + width/2)
+                y2 = int(top + height/2)
+
+                # Coordinates of the 4 top-left corner of the new subdivisions.
+                c1 = (left, top)
+                c2 = (x2, top)
+                c3 = (x2, y2)
+                c4 = (left, y2)
+
+                new_width = int(np.floor(width / 2))
+                new_height = int(np.floor(height / 2))
+
+                # Aaaand recursion.
+                for c in [c1, c2, c3, c4]:
+                    subdivide(arr, thr, hmap, c, new_width, new_height, results)
+
+        img = self.img.convert('RGB')
+        img_width, img_height = img.size
+
+        arr = np.asarray(img)
+        
+        heightmap = heightmap.convert('L')
+        if heightmap.size != img.size:
+            heightmap.resize(img.size)
+        
+        heightmap = np.asarray(heightmap) / 255.0
+            
+        subdivide(arr, thr, heightmap, (0, 0), img_width, img_height, results)
+
+        # Creating a PILe object
+        quad_pile = PILe()
+
+        x = np.asarray(results['x']) - (img_width / 2)
+        y = np.asarray(results['y']) - (img_height / 2)
+        s = np.asarray(results['height']) / 2
+        r = np.asarray(results['width']) / np.asarray(results['height'])
+        c = results['color']
+
+        quad_pile.coords = x, -y  # -y as images y coords are flipped
+        quad_pile.sizes = s
+        quad_pile.ratios = r
+        quad_pile.colors = c
+        quad_pile.shapes = 'rectangle'
+        quad_pile.angles = 0
+        quad_pile.widths = 0
+
+        return quad_pile, results
 
     def to_pile_images(self, params=PILe):
         
