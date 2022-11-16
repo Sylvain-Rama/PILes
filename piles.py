@@ -919,6 +919,7 @@ class ImageDraws(ImageDraw):
         alphas = self._return_proper_values(params.alphas, len(xs))
         angles = self._return_proper_values(params.angles, len(xs))
         ratios = self._return_proper_values(params.ratios, len(xs))
+        
 
         # Scaling x & y and centering them in the image.
         xs = xs * (params.width) / 2 + self.img.width / 2
@@ -949,3 +950,62 @@ class ImageDraws(ImageDraw):
 
             # And pasting with alpha.
             self.img.alpha_composite(img2, (int(x - tmp_x), int(y - tmp_y)))
+            
+            
+    def DrawPolygons(self, params=PILe):
+        xs, ys = params.coords
+        if not isinstance(xs, np.ndarray):
+            xs = np.asarray(xs)
+        if not isinstance(ys, np.ndarray):
+            ys = np.asarray(ys)
+        polys = params.polys
+
+        # Putting images in a proper list
+        if not isinstance(polys, (list, np.ndarray)):
+            polys = [polys]
+        if len(polys) < len(xs):
+            polys = polys * (len(xs) // len(polys))
+        sizes = self._return_proper_values(params.sizes, len(xs))
+        alphas = self._return_proper_values(params.alphas, len(xs))
+        angles = self._return_proper_values(params.angles, len(xs))
+        ratios = self._return_proper_values(params.ratios, len(xs))
+        
+        colors = self._return_proper_values(params.colors, len(xs))
+        outlines = self._return_proper_values(params.outlines, len(xs))
+        widths = self._return_proper_values(params.widths, len(xs))
+        widths = [int(x) for x in widths]
+
+        # Scaling x & y and centering them in the image.
+        xs = xs * (params.width) / 2 + self.img.width / 2
+        ys = - ys * (params.height) / 2 + self.img.height / 2
+
+        all_params = zip(polys, xs, ys, sizes, alphas, angles, colors, outlines, widths)
+
+        for poly, x, y, size, alpha, angle, color, outline, width in all_params:
+
+            poly_xs = [a for (a, b) in poly]
+            poly_ys = [b for (a, b) in poly]
+            
+            poly_width = int(max(poly_xs) - min(poly_xs))
+            poly_height = int(max(poly_ys) - min(poly_ys))
+            
+            tmp_img = Image.new('RGBA', (poly_width, poly_height), color=(0, 0, 0, 0))
+            tmp_draw = ImageDraw(tmp_img)
+            tmp_draw.polygon(poly, fill=color, width=width, outline=outline)
+            
+            if size != 1:
+                
+                tmp_img = tmp_img.resize(
+                    (int(poly_width * size), int(poly_height * size)), resample=Image.LANCZOS
+                )
+            
+            if angle != 0:
+                tmp_img = tmp_img.rotate(angle, expand=True, resample=Image.BICUBIC)
+            poly_width, poly_height = tmp_img.size
+            
+            poly_width /= 2
+            poly_height /= 2
+
+            # And pasting with alpha.
+            self.img.alpha_composite(tmp_img, (int(x - poly_width), int(y - poly_height)))
+        
