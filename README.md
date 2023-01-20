@@ -13,9 +13,11 @@ Multiple small modules, to create complex geometrical shapes or modify existing 
 
 ![Weights](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/weights.png)
 
-### ColorPiles, to easily generate complex color palettes
+### Coupled to Chatoyant, to easily generate complex color palettes
 
 ![palette](https://github.com/Sylvain-Deposit/PILes/blob/main/docs/palette.png)
+
+See more information on [Chatoyant](https://github.com/Sylvain-Deposit/Chatoyant)
 
 ### And combine all of that in a PIL extension to draw multiple shapes in a canvas:
 
@@ -26,7 +28,7 @@ Module allows to draw shapes at desired points, lines and other images as well. 
 
 ![Examples2](https://user-images.githubusercontent.com/60986961/182819718-85d3c930-0c74-4658-860f-5b95115b7107.png)
 
-### ImageOps allows to modify existing images to create PILe objects and then modify them. For example using Quadtrees, dithering, etc...
+### And it can be coupled with [TILEs](https://github.com/Sylvain-Deposit/TILEs) to create PILe objects and then modify them. For example using Quadtrees, dithering, etc...
 
 ![Quad examples](https://user-images.githubusercontent.com/60986961/197569905-f33ae73a-d41a-4726-991c-e34a601e3b68.png)
 
